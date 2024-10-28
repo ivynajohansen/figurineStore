@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Figurine Store Logging</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffebee; /* Coral background color */
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .dashboard {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .figurine-box {
+            background-color: #ffccbc;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin: 10px;
+            padding: 15px;
+            width: 100%;
+            text-align: left;
+        }
+        .figurine-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .figurine-details {
+            margin-bottom: 10px;
+        }
+        .figurine-price {
+            color: #28a745;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .figurine-quantity {
+            color: #007bff;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Figurine Store Dashboard</h1>
+    <div class="dashboard" id="dashboard">
+        <!-- Figurine data will be dynamically added here -->
+    </div>
+    
+    <script>
+        // Connect to the WebSocket server
+        const ws = new WebSocket('ws://server-eric:8080'); // Adjust the URL if necessary
+
+        // Handle connection open event
+        ws.onopen = () => {
+            console.log('Connected to WebSocket server');
+        };
+
+        // Handle incoming messages
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            console.log('Received data:', data);
+            addFigurineToDashboard(data);
+        };
+
+        // Handle connection error
+        ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        };
+
+        // Handle connection close event
+        ws.onclose = () => {
+            console.log('Disconnected from WebSocket server');
+        };
+
+        // Function to add figurine data to the dashboard
+        const addFigurineToDashboard = (figurine) => {
+            const dashboard = document.getElementById('dashboard');
+            const figurineBox = document.createElement('div');
+            figurineBox.classList.add('figurine-box');
+
+            figurineBox.innerHTML = `
+                <div class="figurine-details">
+                    ${figurine.status}d ${figurine.name} with id ${figurine.figurine_id}
+                    ${figurine.before_price ? `, from Price: ${figurine.before_price} to` : '' } 
+                    ${figurine.price !== figurine.before_price ? ` Price: $${figurine.price}` : ''}
+                    ${(figurine.quantity !== figurine.before_quantity) && (figurine.before_quantity) ? `, from Quantity: ${figurine.before_quantity} to` : '' } 
+                    ${figurine.quantity !== figurine.before_quantity ? ` Quantity: ${figurine.quantity}` : ''}
+                </div>
+            `;
+
+            dashboard.appendChild(figurineBox);
+        };
+    </script>
+
+</body>
+</html>

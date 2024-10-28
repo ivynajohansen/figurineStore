@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Figurine Store Analytics</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffebee; /* Coral background color */
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .dashboard {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .figurine-box {
+            background-color: #ffccbc;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            margin: 10px;
+            padding: 15px;
+            width: 100%;
+            text-align: left;
+        }
+        .figurine-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .figurine-details {
+            margin-bottom: 10px;
+        }
+        .figurine-price {
+            color: #28a745;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .figurine-quantity {
+            color: #007bff;
+        }
+        canvas {
+            margin: 20px auto;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Figurine Store Dashboard</h1>
+    <canvas id="figurineChart" width="400" height="200"></canvas>
+    <div class="dashboard" id="dashboard">
+        <!-- Figurine data will be dynamically added here -->
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Connect to the WebSocket server
+        const ws = new WebSocket('ws://server-eric:8091'); // Adjust the URL if necessary
+
+        // Chart.js setup
+        const ctx = document.getElementById('figurineChart').getContext('2d');
+        const figurineChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: [], // Figurine names will go here
+                datasets: [{
+                    label: 'Restocking/Repricing Count',
+                    data: [], // Counts will go here
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Track counts for each figurine
+        const figurineCounts = {};
+
+        // Handle connection open event
+        ws.onopen = () => {
+            console.log('Connected to WebSocket server');
+        };
+
+        // Handle incoming messages
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            console.log('Received data:', data);
+            updateFigurineCounts(data);
+        };
+
+        // Handle connection error
+        ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        };
+
+        // Handle connection close event
+        ws.onclose = () => {
+            console.log('Disconnected from WebSocket server');
+        };
+
+        // Function to update figurine counts and refresh chart
+        const updateFigurineCounts = (figurine) => {
+            const figurineId = figurine.figurine_id;
+            const eventCount = figurine.event_count; // Extract the event count
+
+            // Set the count for this figurine
+            if (!figurineCounts[figurineId]) {
+                figurineCounts[figurineId] = { name: figurineId, count: 0 };
+            }
+            figurineCounts[figurineId].count += eventCount; // Increment by the event count
+
+            // Get top 5 figurines sorted by count
+            const sortedFigurines = Object.values(figurineCounts)
+                .sort((a, b) => b.count - a.count)
+                .slice(0, 5);
+
+            // Update chart data
+            figurineChart.data.labels = sortedFigurines.map(f => f.name);
+            figurineChart.data.datasets[0].data = sortedFigurines.map(f => f.count);
+            figurineChart.update();
+        };
+    </script>
+
+</body>
+</html>
